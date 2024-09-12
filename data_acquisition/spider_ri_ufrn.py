@@ -157,16 +157,16 @@ class SpiderRIUFRN(scrapy.Spider):
 
         logging.info("Columns normalized and unnecessary columns dropped.")
 
-        df['category'] = df['category'].apply(lambda x: "PhD" if "Doutorado" in x else "MSc" if "Mestrado" in x else "Other")
+        df["category"] = df["category"].apply(lambda x: "PhD" if "Doutorado" in x else "MSc" if "Mestrado" in x else "Other")
 
-        df.loc[df['authors'].notnull(), 'authors'] = df.loc[df['authors'].notnull(), 'authors'].apply(
-            lambda x: f'{x.split(",")[1].strip()} {x.split(",")[0].strip()}'
+        df.loc[df["authors"].notnull(), "authors"] = df.loc[df["authors"].notnull(), "authors"].apply(
+            lambda x: f"{x.split(',')[1].strip()} {x.split(',')[0].strip()}"
         )
-        df.loc[df['advisor'].notnull(), 'advisor'] = df.loc[df['advisor'].notnull(), 'advisor'].apply(
-            lambda x: f'{x.split(",")[1].strip()} {x.split(",")[0].strip()}'
+        df.loc[df["advisor"].notnull(), "advisor"] = df.loc[df["advisor"].notnull(), "advisor"].apply(
+            lambda x: f"{x.split(',')[1].strip()} {x.split(',')[0].strip()}"
         )
-        df.loc[df['auth_keywords'].notnull(), 'auth_keywords'] = df.loc[
-            df['auth_keywords'].notnull(), 'auth_keywords'
+        df.loc[df["auth_keywords"].notnull(), "auth_keywords"] = df.loc[
+            df["auth_keywords"].notnull(), "auth_keywords"
         ].apply(
             lambda x: tuple([clean_text(k).strip() for k in x.split(";") if len(clean_text(k).strip())])
         )
@@ -179,7 +179,7 @@ class SpiderRIUFRN(scrapy.Spider):
 
         now = datetime.now()
         dt_string = now.strftime("%Y_%m_%d_%H_%M_%S")
-        output_path = f"./data/data_{dt_string}.csv"
+        output_path = f"./data/ppgeec_{dt_string}.csv"
 
         try:
             df.to_csv(output_path, header=True, index=False, quoting=csv.QUOTE_ALL)
