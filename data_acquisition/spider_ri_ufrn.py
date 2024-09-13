@@ -1,11 +1,14 @@
 """
 File that contains the spider to scrape the data from the RI-UFRN repository.
 """
-import logging.config
+import os
 import re
 import csv
+import json
 import scrapy
 import logging
+import requests
+
 import pandas as pd
 import numpy as np
 
@@ -13,6 +16,7 @@ from utils import clean_text, convert_date
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from datetime import datetime
+from time import sleep
 
 
 now = datetime.now()
@@ -173,9 +177,41 @@ class SpiderRIUFRN(scrapy.Spider):
 
         df.loc[df["title"].notnull(), "title"] = df.loc[df["title"].notnull(), "title"].apply(clean_text)
         df.loc[df["citation"].notnull(), "citation"] = df.loc[df["citation"].notnull(), "citation"].apply(clean_text)
-        df.loc[df["pt_abstract"].notnull(), "pt_abstract"] = df.loc[ df["pt_abstract"].notnull(), "pt_abstract"].apply(clean_text)
+        df.loc[df["pt_abstract"].notnull(), "pt_abstract"] = df.loc[df["pt_abstract"].notnull(), "pt_abstract"].apply(clean_text)
         df.loc[df["en_abstract"].notnull(), "en_abstract"] = df.loc[df["en_abstract"].notnull(), "en_abstract"].apply(clean_text)
         df.loc[df["defense_date"].notnull(), "defense_date"] = df.loc[df["defense_date"].notnull(), "defense_date"].apply(convert_date)
+
+        df["sdg_predictions"] = None
+
+        api_url = f"{os.environ.get('SDG_API_URL')}{os.environ.get('SDG_API_MODEL')}"
+        headers = {'Content-Type': 'application/json'}
+
+        for idx, row in df.iterrows():
+            text = f"TITLE: {row['title']}\n\nABSTRACT: {row['pt_abstract']}\n\nKEYWORDS: {row['auth_keywords']}"
+            payload = json.dumps({"text": text})
+
+            try:
+                response = requests.post(api_url, headers=headers, data=payload)
+                response_json = json.loads(response.text)
+                predictions = response_json["predictions"]
+
+                sorted_predictions = sorted(predictions, key=lambda x: x["prediction"], reverse=True)
+                sorted_predictions = [(pred["sdg"]["label"], pred["prediction"]) for pred in sorted_predictions]
+
+                result = []
+
+                if sorted_predictions:
+                    result.append(sorted_predictions[0])
+
+                if len(sorted_predictions) > 1 and sorted_predictions[1][1] >= 0.2:
+                        result.append(sorted_predictions[1])
+
+                df.at[idx, "sdg_predictions"] = result
+            except Exception as e:
+                logging.error(e)
+                logging.error(f"Title: {row['title']}")
+            finally:
+                sleep(0.25)            
 
         now = datetime.now()
         dt_string = now.strftime("%Y_%m_%d_%H_%M_%S")
