@@ -27,3 +27,5 @@ set SDG_API_MODEL="aurora-sdg-multi"
 ```bash	
 python3 ./data_acquisition/main.py
 ```
+
+## Running the LLM

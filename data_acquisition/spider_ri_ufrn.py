@@ -143,6 +143,7 @@ class SpiderRIUFRN(scrapy.Spider):
 
         df.rename(
             columns={
+                "authors": "author",
                 "keywords": "auth_keywords",
                 "issue date": "defense_date",
                 "portuguese abstract": "pt_abstract",
@@ -163,7 +164,7 @@ class SpiderRIUFRN(scrapy.Spider):
 
         df["category"] = df["category"].apply(lambda x: "PhD" if "Doutorado" in x else "MSc" if "Mestrado" in x else "Other")
 
-        df.loc[df["authors"].notnull(), "authors"] = df.loc[df["authors"].notnull(), "authors"].apply(
+        df.loc[df["author"].notnull(), "author"] = df.loc[df["author"].notnull(), "author"].apply(
             lambda x: f"{x.split(',')[1].strip()} {x.split(',')[0].strip()}"
         )
         df.loc[df["advisor"].notnull(), "advisor"] = df.loc[df["advisor"].notnull(), "advisor"].apply(
@@ -181,19 +182,22 @@ class SpiderRIUFRN(scrapy.Spider):
         df.loc[df["en_abstract"].notnull(), "en_abstract"] = df.loc[df["en_abstract"].notnull(), "en_abstract"].apply(clean_text)
         df.loc[df["defense_date"].notnull(), "defense_date"] = df.loc[df["defense_date"].notnull(), "defense_date"].apply(convert_date)
 
-        df["sdg_predictions"] = None
+        df["sdg_predictions_dict"] = None
+        df["sdg_predictions_filtered"] = None
 
         api_url = f"{os.environ.get('SDG_API_URL')}{os.environ.get('SDG_API_MODEL')}"
-        headers = {'Content-Type': 'application/json'}
+        headers = {"Content-Type": "application/json"}
 
         for idx, row in df.iterrows():
-            text = f"TITLE: {row['title']}\n\nABSTRACT: {row['pt_abstract']}\n\nKEYWORDS: {row['auth_keywords']}"
+            text = f"""TÍTULO: {row['title']}\n\nRESUMO [PORTUGUÊS]: {row['pt_abstract']}\n\nRESUMO [INGLÊS]: {row['en_abstract']}\n\nPALAVRAS-CHAVE: {row['auth_keywords']}"""
             payload = json.dumps({"text": text})
 
             try:
                 response = requests.post(api_url, headers=headers, data=payload)
                 response_json = json.loads(response.text)
                 predictions = response_json["predictions"]
+
+                df.at[idx, "sdg_predictions_dict"] = predictions
 
                 sorted_predictions = sorted(predictions, key=lambda x: x["prediction"], reverse=True)
                 sorted_predictions = [(pred["sdg"]["label"], pred["prediction"]) for pred in sorted_predictions]
@@ -206,7 +210,7 @@ class SpiderRIUFRN(scrapy.Spider):
                 if len(sorted_predictions) > 1 and sorted_predictions[1][1] >= 0.2:
                         result.append(sorted_predictions[1])
 
-                df.at[idx, "sdg_predictions"] = result
+                df.at[idx, "sdg_predictions_filtered"] = result
             except Exception as e:
                 logging.error(e)
                 logging.error(f"Title: {row['title']}")
