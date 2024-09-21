@@ -202,15 +202,19 @@ class SpiderRIUFRN(scrapy.Spider):
                 sorted_predictions = sorted(predictions, key=lambda x: x["prediction"], reverse=True)
                 sorted_predictions = [(pred["sdg"]["label"], pred["prediction"]) for pred in sorted_predictions]
 
-                result = []
+                results = []
 
                 if sorted_predictions:
-                    result.append(sorted_predictions[0])
+                    results.append(sorted_predictions[0])
 
-                if len(sorted_predictions) > 1 and sorted_predictions[1][1] >= 0.2:
-                        result.append(sorted_predictions[1])
+                # if len(sorted_predictions) > 1 and sorted_predictions[1][1] >= 0.2:
+                #         results.append(sorted_predictions[1])
 
-                df.at[idx, "sdg_predictions_filtered"] = result
+                df.at[idx, "sdg_predictions_filtered"] = results
+
+                goals = [result[0].replace("Goal ", "") for result in results]
+
+                df.at[idx, "ODS"] = int(goals[0])
             except Exception as e:
                 logging.error(e)
                 logging.error(f"Title: {row['title']}")

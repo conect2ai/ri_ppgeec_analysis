@@ -22,7 +22,7 @@ data["defense_date"] = pd.to_datetime(data["defense_date"])
 documents = list()
 
 for idx, row in data.iterrows():
-    page_content = f"""TÍTULO: {row['title']}\n\nRESUMO [PORTUGUÊS]: {row['pt_abstract']}\n\nRESUMO [INGLÊS]: {row['en_abstract']}\n\nPALAVRAS-CHAVE: {row['auth_keywords']}\n\nODS: {row['sdg_predictions_filtered']}"""
+    page_content = f"""TÍTULO: {row['title']}\n\nRESUMO [PORTUGUÊS]: {row['pt_abstract']}\n\nRESUMO [INGLÊS]: {row['en_abstract']}\n\nPALAVRAS-CHAVE: {row['auth_keywords']}"""
 
     document = Document(
         id=idx,
@@ -33,6 +33,7 @@ for idx, row in data.iterrows():
             "author": row["author"],
             "advisor": row["advisor"],
             "defense_date_year": row["defense_date"].year,
+            "ods": int(row["ODS"])
         }
     )
 
@@ -57,6 +58,11 @@ metadata_field_info = [
         type="string",
     ),
     AttributeInfo(
+        name="title",
+        description="O título do trabalho",
+        type="string",
+    ),
+    AttributeInfo(
         name="author",
         description="O nome do autor do trabalho",
         type="string",
@@ -70,18 +76,25 @@ metadata_field_info = [
         name="defense_date_year",
         description="O ano da defesa do trabalho",
         type="integer",
+    ),
+    AttributeInfo(
+        name="ods",
+        description="Número do ODS relacionado ao trabalho. Pode ser um valor entre 1 e 17",
+        type="integer",
     )
 ]
 
-document_content_description = "Textos contendo o título, resumo em português, resumo em inglês e palavras-chave dos trabalhos acadêmicos"
+document_content_description = "Textos contendo o título, resumo em português, resumo em inglês, palavras-chave"
+
 llm = ChatOpenAI(
     model="gpt-4o-mini",
     temperature=0
 )
+
 retriever = SelfQueryRetriever.from_llm(
     llm=llm,
     vectorstore=vectostore,
     document_contents=document_content_description,
     metadata_field_info=metadata_field_info,
-    enable_limit=True,
+    enable_limit=True
 )

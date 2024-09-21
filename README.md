@@ -29,3 +29,8 @@ python3 ./data_acquisition/main.py
 ```
 
 ## Running the LLM
+
+# Examples
+
+```bash
+python3

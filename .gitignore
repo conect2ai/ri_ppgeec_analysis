@@ -5,3 +5,5 @@ venv-*
 *.log
 *.csv
 **/chroma_index
+test**
+ragas**

@@ -4,6 +4,7 @@
 import sys
 
 from rag.chains import rag_chain_with_source
+from rag.retriever import retriever
 
 
 try:
