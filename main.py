@@ -2,9 +2,10 @@
 
 """
 import sys
+import tiktoken
 
 from rag.chains import rag_chain_with_source
-from rag.retriever import retriever
+from rag.retriever import retriever, vectostore
 
 
 try:
@@ -14,4 +15,6 @@ except ValueError:
     raise ValueError("Please provide a prompt using the --query flag")
 
 if __name__ == "__main__":
-    print(rag_chain_with_source.invoke({"prompt": query})["answer"])
+    answer = rag_chain_with_source.invoke({"prompt": query})["answer"]
+
+    print(answer)

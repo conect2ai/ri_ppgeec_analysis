@@ -7,3 +7,4 @@ venv-*
 **/chroma_index
 test**
 ragas**
+api/
